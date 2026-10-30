@@ -7,11 +7,12 @@ gitspidy показывает статистику истории локальн
 ## установка
 
 ```bash
-git clone <URL-репозитория>
-cd gitspidy
+git clone https://github.com/Offensive94/GitSpidy.git
+cd GitSpidy
 python --version
 git --version
 ```
+~~бляяяять я в ближайшее время ни одной нейронке не доверю написание документации это пиздец~~
 
 все команды желательно запускать из корневой директории проекта
 
@@ -99,4 +100,6 @@ gitspidy/
 
 ## планы
 
-читай milestone.txt
+читай [milestone.md](milestone.md)
+
+https://vt.tiktok.com/ZSg7anugD/
