@@ -25,3 +25,48 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: check cli entry point
         run: python -m gitspidy --help
+
+  build-linux:
+    needs: test
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tk xvfb xauth
+          python -m pip install pyinstaller==6.22.3
+      - name: build binary
+        run: python -m PyInstaller --onefile --name gitspidy --paths . gitspidy/__main__.py
+      - name: smoke test binary
+        run: |
+          ./dist/gitspidy --help
+          ./dist/gitspidy scan .
+          xvfb-run -a python - <<'PY'
+          import subprocess
+          import time
+
+          process = subprocess.Popen(["./dist/gitspidy", "gui", "."])
+          try:
+              time.sleep(3)
+              if process.poll() is not None:
+                  raise SystemExit(f"GUI exited early: {process.returncode}")
+          finally:
+              process.terminate()
+              try:
+                  process.wait(timeout=5)
+              except subprocess.TimeoutExpired:
+                  process.kill()
+                  process.wait()
+          PY
+      - name: pack binary
+        run: tar -czf gitspidy-linux-x86_64.tar.gz -C dist gitspidy
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gitspidy-linux-x86_64
+          path: gitspidy-linux-x86_64.tar.gz
+          if-no-files-found: error
