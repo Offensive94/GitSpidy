@@ -9,7 +9,9 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import types
 import unittest
+from unittest.mock import Mock, patch
 
 from gitspidy.cli import main
 from gitspidy.core import GitSpidyError, calculate_stats, filter_commits, get_commits
@@ -122,6 +124,16 @@ class RepositoryTest(unittest.TestCase):
             with self.assertRaises(SystemExit) as caught:
                 main(["scan", str(self.path), "--date", "2026-13-99"])
         self.assertEqual(caught.exception.code, 2)
+
+    def test_gui_command_dispatches_without_changing_scan(self) -> None:
+        gui_main = Mock(return_value=0)
+        gui_module = types.ModuleType("gitspidy.gui")
+        gui_module.main = gui_main
+        with patch.dict("sys.modules", {"gitspidy.gui": gui_module}):
+            self.assertEqual(main(["gui", str(self.path)]), 0)
+        gui_main.assert_called_once_with(str(self.path))
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main(["scan", str(self.path)]), 0)
 
 
 if __name__ == "__main__":
