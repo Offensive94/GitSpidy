@@ -27,6 +27,8 @@ def _parser() -> argparse.ArgumentParser:
     scan.add_argument("path", metavar="PATH", help="путь к репозиторию")
     scan.add_argument("--author", metavar="NAME", help="часть имени автора, без учёта регистра")
     scan.add_argument("--date", metavar="YYYY-MM-DD", type=_parse_date, help="дата коммита автора")
+    gui = subparsers.add_parser("gui", help="открыть графический интерфейс")
+    gui.add_argument("path", nargs="?", default=".", metavar="PATH", help="путь к репозиторию (по умолчанию текущая папка)")
     return parser
 
 
@@ -83,6 +85,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 0
+    if args.command == "gui":
+        try:
+            from .gui import main as gui_main
+        except ImportError as exc:
+            print(f"Ошибка: Tkinter недоступен: {exc}", file=sys.stderr)
+            return 1
+        return gui_main(args.path)
     try:
         commits = filter_commits(get_commits(args.path), author=args.author, day=args.date)
         stats = calculate_stats(commits)
