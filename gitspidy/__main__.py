@@ -1,6 +1,6 @@
 """run gitspidy with python -m gitspidy"""
 
-from .cli import main
+from gitspidy.cli import main
 
 
 if __name__ == "__main__":
