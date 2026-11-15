@@ -34,6 +34,9 @@ class Statistics:
     top_authors: tuple[tuple[str, int], ...]
     daily_counts: dict[date, int]
     hourly_counts: dict[int, int]
+    current_streak: int
+    longest_streak: int
+    longest_break: int
 
 
 def _run_git(path: Path, *arguments: str) -> bytes:
@@ -108,6 +111,42 @@ def filter_commits(
     ]
 
 
+def _streaks_and_breaks(dates: list[date]) -> tuple[int, int, int]:
+    """return (current_streak, longest_streak, longest_break) from sorted dates"""
+    if not dates:
+        return (0, 0, 0)
+
+    sorted_dates = sorted(dates)
+
+    # current streak: count backwards from the last date
+    current = 1
+    for i in range(len(sorted_dates) - 2, -1, -1):
+        if (sorted_dates[i + 1] - sorted_dates[i]).days == 1:
+            current += 1
+        else:
+            break
+
+    # longest streak
+    longest = 1
+    streak = 1
+    for i in range(1, len(sorted_dates)):
+        if (sorted_dates[i] - sorted_dates[i - 1]).days == 1:
+            streak += 1
+        else:
+            longest = max(longest, streak)
+            streak = 1
+    longest = max(longest, streak)
+
+    # longest break between consecutive commit days
+    longest_break = 0
+    for i in range(1, len(sorted_dates)):
+        gap = (sorted_dates[i] - sorted_dates[i - 1]).days - 1
+        if gap > longest_break:
+            longest_break = gap
+
+    return (current, longest, longest_break)
+
+
 def calculate_stats(commits: Iterable[Commit]) -> Statistics:
     """calculate all stats from the given commits including filtered ones"""
     selected = list(commits)
@@ -118,6 +157,7 @@ def calculate_stats(commits: Iterable[Commit]) -> Statistics:
     last = max((commit.authored_at for commit in selected), default=None)
     peak_day = min(days, key=lambda value: (-days[value], value)) if days else None
     peak_hour = min(hours, key=lambda value: (-hours[value], value)) if hours else None
+    current_streak, longest_streak, longest_break = _streaks_and_breaks(list(days))
     return Statistics(
         total_commits=len(selected),
         contributors=len(authors),
@@ -129,4 +169,7 @@ def calculate_stats(commits: Iterable[Commit]) -> Statistics:
         top_authors=tuple(sorted(authors.items(), key=lambda item: (-item[1], item[0].casefold(), item[0]))),
         daily_counts=dict(days),
         hourly_counts=dict(hours),
+        current_streak=current_streak,
+        longest_streak=longest_streak,
+        longest_break=longest_break,
     )

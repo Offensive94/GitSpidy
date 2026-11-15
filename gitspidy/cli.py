@@ -52,6 +52,9 @@ def _print_report(path: Path, commits: list, stats, day: date | None) -> None:
         ("Active days", str(stats.active_days)),
         ("Peak day", stats.peak_day.isoformat() if stats.peak_day else dash),
         ("Peak hour", f"{stats.peak_hour:02d}:00" if stats.peak_hour is not None else dash),
+        ("Current streak", f"{stats.current_streak} day{'s' if stats.current_streak != 1 else ''}"),
+        ("Longest streak", f"{stats.longest_streak} day{'s' if stats.longest_streak != 1 else ''}"),
+        ("Longest break", f"{stats.longest_break} day{'s' if stats.longest_break != 1 else ''}"),
     )
     for label, value in rows:
         print(f"{label:<16} {value}")
@@ -103,6 +106,9 @@ def _print_json(path: Path, commits: list, stats) -> None:
             "active_days": stats.active_days,
             "peak_day": stats.peak_day.isoformat() if stats.peak_day else None,
             "peak_hour": stats.peak_hour,
+            "current_streak": stats.current_streak,
+            "longest_streak": stats.longest_streak,
+            "longest_break": stats.longest_break,
             "top_authors": [
                 {"author": author, "commits": count}
                 for author, count in stats.top_authors
