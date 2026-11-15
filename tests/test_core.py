@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import redirect_stdout, redirect_stderr
 from datetime import date
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -124,6 +125,19 @@ class RepositoryTest(unittest.TestCase):
             with self.assertRaises(SystemExit) as caught:
                 main(["scan", str(self.path), "--date", "2026-13-99"])
         self.assertEqual(caught.exception.code, 2)
+
+    def test_cli_json_output_is_machine_readable(self) -> None:
+        self.sample_history()
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(["scan", str(self.path), "--author", "joost", "--json"])
+        self.assertEqual(code, 0)
+        report = json.loads(output.getvalue())
+        self.assertEqual(report["statistics"]["total_commits"], 2)
+        self.assertEqual(report["statistics"]["contributors"], 2)
+        self.assertEqual(len(report["commits"]), 2)
+        self.assertEqual({commit["author"] for commit in report["commits"]}, {"Joost", "joost"})
+        self.assertEqual(report["statistics"]["daily_counts"], {"2026-10-30": 2})
 
     def test_gui_command_dispatches_without_changing_scan(self) -> None:
         gui_main = Mock(return_value=0)

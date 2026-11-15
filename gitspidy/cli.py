@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import date
+import json
 from pathlib import Path
 import sys
 
@@ -27,6 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     scan.add_argument("path", metavar="PATH", help="путь к репозиторию")
     scan.add_argument("--author", metavar="NAME", help="часть имени автора, без учёта регистра")
     scan.add_argument("--date", metavar="YYYY-MM-DD", type=_parse_date, help="дата коммита автора")
+    scan.add_argument("--json", action="store_true", help="вывести результат в формате JSON")
     gui = subparsers.add_parser("gui", help="открыть графический интерфейс")
     gui.add_argument("path", nargs="?", default=".", metavar="PATH", help="путь к репозиторию (по умолчанию текущая папка)")
     return parser
@@ -79,6 +81,44 @@ def _print_report(path: Path, commits: list, stats, day: date | None) -> None:
             print(f"{commit.sha[:12]:<12} {commit.authored_at.strftime('%H:%M:%S %z'):<22} {commit.author[:25]:<25} {summary}")
 
 
+def _print_json(path: Path, commits: list, stats) -> None:
+    """print a stable, machine-readable representation of the analysis"""
+    payload = {
+        "path": str(path),
+        "statistics": {
+            "total_commits": stats.total_commits,
+            "contributors": stats.contributors,
+            "first_commit": stats.first_commit.isoformat() if stats.first_commit else None,
+            "last_commit": stats.last_commit.isoformat() if stats.last_commit else None,
+            "active_days": stats.active_days,
+            "peak_day": stats.peak_day.isoformat() if stats.peak_day else None,
+            "peak_hour": stats.peak_hour,
+            "top_authors": [
+                {"author": author, "commits": count}
+                for author, count in stats.top_authors
+            ],
+            "daily_counts": {
+                day.isoformat(): count
+                for day, count in sorted(stats.daily_counts.items())
+            },
+            "hourly_counts": {
+                str(hour): count
+                for hour, count in sorted(stats.hourly_counts.items())
+            },
+        },
+        "commits": [
+            {
+                "sha": commit.sha,
+                "author": commit.author,
+                "authored_at": commit.authored_at.isoformat(),
+                "message": commit.message,
+            }
+            for commit in commits
+        ],
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -98,5 +138,9 @@ def main(argv: list[str] | None = None) -> int:
     except GitSpidyError as exc:
         print(f"Ошибка: {exc}", file=sys.stderr)
         return 1
-    _print_report(Path(args.path).expanduser(), commits, stats, args.date)
+    output_path = Path(args.path).expanduser()
+    if args.json:
+        _print_json(output_path, commits, stats)
+    else:
+        _print_report(output_path, commits, stats, args.date)
     return 0

@@ -26,6 +26,7 @@ python -m gitspidy scan .
 python -m gitspidy scan . --author joost
 python -m gitspidy scan . --date 2026-10-30
 python -m gitspidy scan . --author joost --date 2026-10-30
+python -m gitspidy scan . --json
 python -m gitspidy scan --help
 ```
 
@@ -38,6 +39,8 @@ python -m gitspidy scan --help
 фильтры можно комбинировать, вся статистика будет пересчитываться только по подходящим коммитам
 
 при использовании `--date` дополнительно выводится список коммитов за выбранный день
+
+`--json` выводит ту же статистику и отфильтрованные коммиты в JSON, чтобы результат можно было обработать другим скриптом
 
 ## как работает
 
