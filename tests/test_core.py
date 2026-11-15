@@ -87,6 +87,42 @@ class RepositoryTest(unittest.TestCase):
         self.assertEqual(stats.first_commit.date(), date(2026, 10, 30))
         self.assertEqual(stats.last_commit.date(), date(2026, 10, 31))
 
+    def test_streaks_and_breaks(self) -> None:
+        """current streak, longest streak, and longest break from daily_counts"""
+        # day 1 — streak of 1
+        self.commit("a", "Joost", "2026-10-01T12:00:00+05:00")
+        # gap of 5 days
+        # day 7, 8, 9 — streak of 3
+        self.commit("b", "Joost", "2026-10-07T12:00:00+05:00")
+        self.commit("c", "Joost", "2026-10-08T12:00:00+05:00")
+        self.commit("d", "Joost", "2026-10-09T12:00:00+05:00")
+        # gap of 2 days
+        # day 12, 13 — current streak of 2
+        self.commit("e", "Joost", "2026-10-12T12:00:00+05:00")
+        self.commit("f", "Joost", "2026-10-13T12:00:00+05:00")
+        stats = calculate_stats(get_commits(self.path))
+        self.assertEqual(stats.current_streak, 2)
+        self.assertEqual(stats.longest_streak, 3)
+        self.assertEqual(stats.longest_break, 5)
+
+    def test_single_day_streaks(self) -> None:
+        """single commit day — streak of 1, no break"""
+        self.commit("only", "Joost", "2026-10-15T12:00:00+05:00")
+        stats = calculate_stats(get_commits(self.path))
+        self.assertEqual(stats.current_streak, 1)
+        self.assertEqual(stats.longest_streak, 1)
+        self.assertEqual(stats.longest_break, 0)
+
+    def test_consecutive_days_no_break(self) -> None:
+        """every day for a week — streak equals active_days, break is 0"""
+        for day_offset in range(7):
+            ts = f"2026-10-{15 + day_offset:02d}T12:00:00+05:00"
+            self.commit(f"day {day_offset}", "Joost", ts)
+        stats = calculate_stats(get_commits(self.path))
+        self.assertEqual(stats.current_streak, 7)
+        self.assertEqual(stats.longest_streak, 7)
+        self.assertEqual(stats.longest_break, 0)
+
     def test_empty_repository(self) -> None:
         stats = calculate_stats(get_commits(self.path))
         self.assertEqual(stats.total_commits, 0)
@@ -95,6 +131,9 @@ class RepositoryTest(unittest.TestCase):
         self.assertIsNone(stats.first_commit)
         self.assertIsNone(stats.peak_day)
         self.assertIsNone(stats.peak_hour)
+        self.assertEqual(stats.current_streak, 0)
+        self.assertEqual(stats.longest_streak, 0)
+        self.assertEqual(stats.longest_break, 0)
 
     def test_invalid_path_and_non_repository(self) -> None:
         with self.assertRaisesRegex(GitSpidyError, "Директория не существует"):
