@@ -35,6 +35,8 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _bar(count: int, maximum: int) -> str:
+    if count == 0:
+        return ""
     return "█" * max(1, round(count / maximum * 24))
 
 
@@ -71,6 +73,14 @@ def _print_report(path: Path, commits: list, stats, day: date | None) -> None:
     maximum = max(stats.daily_counts.values())
     for active_day, count in sorted(stats.daily_counts.items()):
         print(f"{active_day.isoformat():<12} {count:>7}  {_bar(count, maximum)}")
+
+    print("\nHourly distribution (24h)")
+    print(f"{'Hour':<8} {'Commits':>7}  Activity")
+    print("-" * 60)
+    max_hour = max(stats.hourly_counts.values()) if stats.hourly_counts else 1
+    for hour in range(24):
+        count = stats.hourly_counts.get(hour, 0)
+        print(f"{hour:02d}:00{'':>5} {count:>7}  {_bar(count, max_hour)}")
 
     if day is not None:
         print(f"\nCommits on {day.isoformat()}")
