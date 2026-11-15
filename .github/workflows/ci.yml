@@ -82,6 +82,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tk xvfb xauth
       - name: build binary
         run: python -m PyInstaller --onefile --name gitspidy --paths . gitspidy/__main__.py
+      - name: build GUI binary
+        run: >-
+          python -m PyInstaller --onefile --windowed --name gitspidy-gui
+          --paths . gitspidy/gui_main.py
       - name: smoke test binary
         if: runner.os != 'Linux'
         run: ./dist/gitspidy --help
@@ -90,7 +94,7 @@ jobs:
         run: |
           ./dist/gitspidy --help
           ./dist/gitspidy scan .
-          xvfb-run -a ./dist/gitspidy gui . &
+          xvfb-run -a ./dist/gitspidy-gui . &
           pid=$!
           sleep 3
           kill "$pid" || true
@@ -98,9 +102,9 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            tar -czf "${{ matrix.artifact }}.tar.gz" -C dist gitspidy.exe
+            tar -czf "${{ matrix.artifact }}.tar.gz" -C dist gitspidy.exe gitspidy-gui.exe
           else
-            tar -czf "${{ matrix.artifact }}.tar.gz" -C dist gitspidy
+            tar -czf "${{ matrix.artifact }}.tar.gz" -C dist gitspidy gitspidy-gui
           fi
       - uses: actions/upload-artifact@v7
         with:
