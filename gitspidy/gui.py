@@ -97,6 +97,8 @@ class GitSpidyGUI:
             ("first_commit", "Первый коммит"), ("last_commit", "Последний коммит"),
             ("active_days", "Активные дни"), ("peak_day", "Пиковый день"),
             ("peak_hour", "Пиковый час"),
+            ("current_streak", "Текущий стрик"), ("longest_streak", "Максимальный стрик"),
+            ("longest_break", "Самый долгий перерыв"),
         )
         for index, (key, title) in enumerate(labels):
             card = tk.Frame(metrics, bg=PANEL, padx=12, pady=9)
@@ -311,6 +313,9 @@ class GitSpidyGUI:
             "active_days": str(stats.active_days),
             "peak_day": stats.peak_day.isoformat() if stats.peak_day else "—",
             "peak_hour": f"{stats.peak_hour:02d}:00" if stats.peak_hour is not None else "—",
+            "current_streak": f"{stats.current_streak} day{'s' if stats.current_streak != 1 else ''}",
+            "longest_streak": f"{stats.longest_streak} day{'s' if stats.longest_streak != 1 else ''}",
+            "longest_break": f"{stats.longest_break} day{'s' if stats.longest_break != 1 else ''}",
         }
         for key, value in values.items():
             self.metric_values[key].configure(text=value)
